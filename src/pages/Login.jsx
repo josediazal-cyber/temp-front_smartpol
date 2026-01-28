@@ -24,7 +24,7 @@ export default function Login() {
       localStorage.setItem("refresh_token", data.refresh_token);
       localStorage.setItem("user_email", data.email);
 
-      navigate("/inicio");
+      navigate("/personas");
     } catch (err) {
       setError("Usuario o contraseña incorrectos");
     }

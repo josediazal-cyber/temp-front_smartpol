@@ -128,8 +128,6 @@ export default function AddVoterModal({ onClose, onVoterAdded }) {
       politicalStatus: form.politicalStatus,
     };
 
-    console.log("Payload que se enviará al backend:", voterPayload);
-
     try {
       const voter = await createVoter(voterPayload);
       const voterId = voter.id;
@@ -172,6 +170,7 @@ export default function AddVoterModal({ onClose, onVoterAdded }) {
 
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Campos de texto y fecha */}
             {[
               { label: "Nombre", name: "firstName" },
               { label: "Apellido", name: "lastName" },
@@ -184,7 +183,7 @@ export default function AddVoterModal({ onClose, onVoterAdded }) {
               { label: "Ubicación de votación", name: "votingLocation" },
               { label: "Casilla", name: "votingBooth" },
               { label: "Estado político", name: "politicalStatus" },
-              { label: "Fecha de nacimiento", name: "birthDate", type: "date" }, // ✅ Agregado
+              { label: "Fecha de nacimiento", name: "birthDate", type: "date" },
             ].map((field) => (
               <div key={field.name} className="flex flex-col">
                 <label className="font-medium mb-1">{field.label}:</label>
@@ -194,22 +193,36 @@ export default function AddVoterModal({ onClose, onVoterAdded }) {
                   value={form[field.name]}
                   onChange={handleChange}
                   className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  required={field.name === "birthDate"} // obligatorio
+                  required={field.name === "birthDate"}
                 />
               </div>
             ))}
 
+            {/* Campos select */}
             {[
               {
                 label: "Género",
                 name: "gender",
                 options: [
-                  { value: "", label: "Seleccione" },
                   { value: "M", label: "Masculino" },
                   { value: "F", label: "Femenino" },
                 ],
               },
-              { label: "Tipo de sangre", name: "bloodType", options: [] },
+              {
+                label: "Tipo de sangre",
+                name: "bloodType",
+                options: [
+                  { value: "", label: "Seleccione" },
+                  { value: "A+", label: "A+" },
+                  { value: "A-", label: "A-" },
+                  { value: "B+", label: "B+" },
+                  { value: "B-", label: "B-" },
+                  { value: "AB+", label: "AB+" },
+                  { value: "AB-", label: "AB-" },
+                  { value: "O+", label: "O+" },
+                  { value: "O-", label: "O-" },
+                ],
+              },
               {
                 label: "Departamento",
                 name: "departmentId",
@@ -237,28 +250,19 @@ export default function AddVoterModal({ onClose, onVoterAdded }) {
             ].map((field) => (
               <div key={field.name} className="flex flex-col">
                 <label className="font-medium mb-1">{field.label}:</label>
-                {field.options.length > 0 ? (
-                  <select
-                    name={field.name}
-                    value={form[field.name]}
-                    onChange={handleChange}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  >
-                    <option value="">Seleccione</option>
-                    {field.options.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    name={field.name}
-                    value={form[field.name]}
-                    onChange={handleChange}
-                    className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                  />
-                )}
+                <select
+                  name={field.name}
+                  value={form[field.name]}
+                  onChange={handleChange}
+                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                >
+                  <option value="">Seleccione</option>
+                  {field.options.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
               </div>
             ))}
           </div>
