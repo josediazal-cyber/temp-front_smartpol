@@ -1,4 +1,4 @@
-const API_URL = 'https://ad4f6d0ccc35.ngrok-free.app'; // Cambia esto a tu URL
+import { API_URL } from './config';
 
 export async function getVoters() {
   try {

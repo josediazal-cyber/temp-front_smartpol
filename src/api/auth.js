@@ -1,4 +1,4 @@
-const API_URL = 'https://ad4f6d0ccc35.ngrok-free.app';
+import { API_URL } from './config';
 
 export async function login(email, password) {
   try {
