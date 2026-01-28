@@ -1,18 +1,34 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inicio from "./pages/Inicio";
 import Personas from "./pages/Personas";
+import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/" element={<Dashboard />}>
+        {/* Ruta pública */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Rutas protegidas dentro de Dashboard */}
+        <Route
+          path="/app"
+          element={
+            <PrivateRoute>
+              <Dashboard />
+            </PrivateRoute>
+          }
+        >
           <Route path="inicio" element={<Inicio />} />
           <Route path="personas" element={<Personas />} />
+          {/* Ruta por defecto dentro de Dashboard */}
+          <Route index element={<Navigate to="inicio" replace />} />
         </Route>
+
+        {/* Redirigir cualquier otra ruta a login */}
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );
