@@ -15,7 +15,7 @@ export default function Sidebar() {
         <ul className="space-y-3">
           <li>
             <Link
-              to="/personas"
+              to="/app/personas"
               className="block px-4 py-2 rounded-md hover:bg-orange-100 transition-colors"
             >
               Personas
