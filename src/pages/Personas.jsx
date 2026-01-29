@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getVoters } from "../api/voters";
+import { getVoters, deleteVoter } from "../api/voters";
 import AddVoterModal from "../components/AddVoterModal";
 import { PlusIcon } from "@heroicons/react/24/solid";
 
@@ -8,6 +8,7 @@ export default function Personas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [editingVoter, setEditingVoter] = useState(null);
 
   const fetchVoters = async () => {
     setLoading(true);
@@ -26,6 +27,22 @@ export default function Personas() {
     fetchVoters();
   }, []);
 
+  const handleEdit = (voter) => {
+    setEditingVoter(voter);
+    setShowModal(true);
+  };
+
+  const handleDelete = async (voterId) => {
+    if (!confirm("¿Estás seguro de eliminar este votante?")) return;
+    try {
+      await deleteVoter(voterId);
+      setVoters(voters.filter((v) => v.id !== voterId));
+    } catch (err) {
+      alert("No se pudo eliminar el votante");
+      console.error(err);
+    }
+  };
+
   return (
     <div className="p-8">
       {/* Header */}
@@ -34,7 +51,10 @@ export default function Personas() {
           Listado de Votantes
         </h2>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setEditingVoter(null);
+            setShowModal(true);
+          }}
           className="flex items-center gap-2 bg-orange-500 text-white px-4 py-2 rounded-lg shadow hover:bg-orange-600 transition-colors"
         >
           <PlusIcon className="w-5 h-5" />
@@ -45,6 +65,7 @@ export default function Personas() {
       {/* Modal */}
       {showModal && (
         <AddVoterModal
+          voter={editingVoter}
           onClose={() => setShowModal(false)}
           onVoterAdded={fetchVoters}
         />
@@ -69,6 +90,7 @@ export default function Personas() {
                   "Teléfono",
                   "Ubicación de votación",
                   "Estado político",
+                  "Acciones",
                 ].map((header) => (
                   <th
                     key={header}
@@ -83,9 +105,7 @@ export default function Personas() {
               {voters.map((voter, idx) => (
                 <tr
                   key={voter.id}
-                  className={`${
-                    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
-                  } hover:bg-orange-100 transition-colors`}
+                  className={`${idx % 2 === 0 ? "bg-white" : "bg-gray-50"} hover:bg-orange-100 transition-colors`}
                 >
                   <td className="px-6 py-3">{voter.id}</td>
                   <td className="px-6 py-3 font-medium">
@@ -99,6 +119,20 @@ export default function Personas() {
                     {voter.votingLocation} - {voter.votingBooth}
                   </td>
                   <td className="px-6 py-3">{voter.politicalStatus}</td>
+                  <td className="px-6 py-3 flex gap-2">
+                    <button
+                      onClick={() => handleEdit(voter)}
+                      className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(voter.id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition-colors"
+                    >
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
