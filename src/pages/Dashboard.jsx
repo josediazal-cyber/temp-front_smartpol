@@ -1,24 +1,34 @@
 import { Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const email = localStorage.getItem("user_email"); // guardamos al loguear
+  const email = localStorage.getItem("user_email");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/"); // redirige al login
+    navigate("/login");
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
-      <Sidebar />
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Navbar email={email} onLogout={handleLogout} />
-        <div style={{ flex: 1, overflow: "auto" }}>
-          <Outlet /> {/* Aquí se renderizan Inicio o Personas */}
-        </div>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar responsive */}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Contenido */}
+      <div className="flex-1 flex flex-col">
+        <Navbar
+          email={email}
+          onLogout={handleLogout}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
+
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <Outlet />
+        </main>
       </div>
     </div>
   );
