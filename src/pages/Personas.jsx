@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getVoters, deleteVoter } from "../api/voters";
+import { getVoters, deleteVoter, getAssignedCandidate } from "../api/voters";
 import AddVoterModal from "../components/AddVoterModal";
 import {
   PlusIcon,
@@ -14,6 +14,7 @@ export default function Personas() {
   const [showModal, setShowModal] = useState(false);
   const [editingVoter, setEditingVoter] = useState(null);
   const [search, setSearch] = useState("");
+  const [voterCandidates, setVoterCandidates] = useState({});
 
   const fetchVoters = async () => {
     setLoading(true);
@@ -21,6 +22,20 @@ export default function Personas() {
     try {
       const data = await getVoters();
       setVoters(data);
+
+      // Cargar candidatos asignados para cada votante
+      const candidatesMap = {};
+      for (const voter of data) {
+        try {
+          const assignedData = await getAssignedCandidate(voter.id);
+          if (assignedData?.candidate) {
+            candidatesMap[voter.id] = assignedData.candidate.name;
+          }
+        } catch {
+          // Ignorar si no hay candidato asignado
+        }
+      }
+      setVoterCandidates(candidatesMap);
     } catch {
       setError("No se pudieron cargar los votantes");
     } finally {
@@ -126,8 +141,8 @@ export default function Personas() {
                     "Identificación",
                     "Correo",
                     "Teléfono",
-                    "Ubicación",
-                    "Estado",
+                    "Lugar de Votación",
+                    "Candidatos",
                     "Acciones",
                   ].map((h) => (
                     <th
@@ -152,21 +167,25 @@ export default function Personas() {
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {v.email}
+                      {v.email || "-"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                      {v.phone}
+                      {v.phone || "-"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                      {v.votingLocation} - {v.votingBooth}
+                      {v.votingLocation}
                     </td>
 
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
-                        {v.politicalStatus}
-                      </span>
+                    <td className="px-6 py-4 text-sm text-gray-700">
+                      {voterCandidates[v.id] ? (
+                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                          {voterCandidates[v.id]}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">Sin asignar</span>
+                      )}
                     </td>
 
                     <td className="px-6 py-4 flex gap-4">
@@ -208,19 +227,25 @@ export default function Personas() {
                   <b>ID:</b> {v.identification}
                 </p>
                 <p>
-                  <b>Email:</b> {v.email}
+                  <b>Email:</b> {v.email || "-"}
                 </p>
                 <p>
-                  <b>Tel:</b> {v.phone}
+                  <b>Tel:</b> {v.phone || "-"}
                 </p>
                 <p>
                   <b>Ubicación:</b> {v.votingLocation}
                 </p>
+                <p>
+                  <b>Candidato:</b>{" "}
+                  {voterCandidates[v.id] ? (
+                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold ml-1">
+                      {voterCandidates[v.id]}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">Sin asignar</span>
+                  )}
+                </p>
               </div>
-
-              <span className="inline-block mt-3 px-3 py-1 text-xs rounded-full bg-orange-100 text-orange-700 font-semibold">
-                {v.politicalStatus}
-              </span>
 
               <div className="flex justify-end gap-5 mt-4">
                 <button

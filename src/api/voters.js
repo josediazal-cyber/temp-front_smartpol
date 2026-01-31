@@ -33,12 +33,34 @@ export async function deleteVoter(voterId) {
   if (!response.ok) throw new Error('Error al eliminar votante');
   return true;
 }
-export async function assignCandidateToVoter(voterId, candidateId) {
+export async function getAssignedCandidate(voterId) {
+  const response = await fetch(`${API_URL}/voters/${voterId}/assign-candidate`);
+  if (!response.ok) return null;
+  return response.json();
+}
+
+export async function assignCandidateToVoter(voterId, candidateId, leaderId) {
   const response = await fetch(`${API_URL}/voters/${voterId}/assign-candidate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ candidateId }),
+    body: JSON.stringify({ 
+      candidate_id: candidateId,
+      leader_id: leaderId,
+    }),
   });
   if (!response.ok) throw new Error("Error al asignar candidato al votante");
+  return response.json();
+}
+
+export async function updateAssignedCandidate(voterId, candidateId, leaderId) {
+  const response = await fetch(`${API_URL}/voters/${voterId}/assign-candidate`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ 
+      candidate_id: candidateId,
+      leader_id: leaderId,
+    }),
+  });
+  if (!response.ok) throw new Error("Error al actualizar candidato asignado");
   return response.json();
 }
