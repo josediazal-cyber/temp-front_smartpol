@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { getDepartments, getMunicipalities } from "../api/departments";
 import {
   createVoter,
-  assignCandidateToVoter,
+  assignCandidatesToVoter,
   updateVoter,
-  getAssignedCandidate,
-  updateAssignedCandidate,
+  getAssignedCandidates,
+  updateAssignedCandidates,
 } from "../api/voters";
 import { getLeaders, getCandidatesByLeader } from "../api/leaders";
 import { XMarkIcon } from "@heroicons/react/24/solid";
@@ -29,7 +29,7 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
     votingBooth: voter?.votingBooth || "",
     politicalStatus: voter?.politicalStatus || "Active",
     leaderId: "",
-    candidateId: "",
+    candidateIds: [],
   });
 
   const [departments, setDepartments] = useState([]);
@@ -38,7 +38,8 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [assignedData, setAssignedData] = useState(null);
+  const [assignedData, setAssignedData] = useState([]);
+  const [initialLeaderId, setInitialLeaderId] = useState(null);
 
   useEffect(() => {
     getDepartments().then(setDepartments);
@@ -46,13 +47,16 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
 
     // Si es edición, obtener datos de asignación actual
     if (voter) {
-      getAssignedCandidate(voter.id).then((data) => {
-        if (data) {
+      getAssignedCandidates(voter.id).then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
           setAssignedData(data);
+          const candidateIds = data.map((d) => d.candidate_id || d.candidateId);
+          const leaderId = data[0].leader_id || data[0].leaderId;
+          setInitialLeaderId(leaderId);
           setForm((p) => ({
             ...p,
-            leaderId: data.leaderId || "",
-            candidateId: data.candidateId || "",
+            leaderId: leaderId || "",
+            candidateIds: candidateIds || [],
           }));
         }
       });
@@ -72,18 +76,28 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
     if (form.leaderId) {
       getCandidatesByLeader(form.leaderId).then((data) => {
         setCandidates(data);
-        // Si no estamos en edición, por defecto no seleccionar ninguno
-        if (!voter) {
-          setForm((p) => ({ ...p, candidateId: "" }));
+        // Solo limpiar candidatos si el usuario cambió manualmente de líder
+        // Si es la carga inicial (leaderId === initialLeaderId), mantener los preseleccionados
+        if (form.leaderId !== initialLeaderId && initialLeaderId !== null) {
+          setForm((p) => ({ ...p, candidateIds: [] }));
         }
       });
     } else {
       setCandidates([]);
     }
-  }, [form.leaderId, voter]);
+  }, [form.leaderId, initialLeaderId]);
 
   const handleChange = (e) =>
     setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleCandidateChange = (candidateId) => {
+    setForm((prev) => {
+      const newIds = prev.candidateIds.includes(candidateId)
+        ? prev.candidateIds.filter((id) => id !== candidateId)
+        : [...prev.candidateIds, candidateId];
+      return { ...prev, candidateIds: newIds };
+    });
+  };
 
   const validateForm = () => {
     const requiredFields = {
@@ -93,7 +107,6 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
       votingLocation: "Lugar de votación",
       votingBooth: "Casilla",
       leaderId: "Líder",
-      candidateId: "Candidato",
       departmentId: "Departamento",
       municipalityId: "Municipio",
     };
@@ -104,6 +117,12 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
         return false;
       }
     }
+
+    if (form.candidateIds.length === 0) {
+      setError("Debe seleccionar al menos un candidato");
+      return false;
+    }
+
     return true;
   };
 
@@ -144,11 +163,11 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
         await updateVoter(voter.id, voterPayload);
         voterId = voter.id;
 
-        // Actualizar asignación de candidato y líder
-        if (form.candidateId && form.leaderId) {
-          await updateAssignedCandidate(
+        // Actualizar asignación de candidatos y líder
+        if (form.candidateIds.length > 0 && form.leaderId) {
+          await updateAssignedCandidates(
             voterId,
-            Number(form.candidateId),
+            form.candidateIds.map(Number),
             Number(form.leaderId),
           );
         }
@@ -157,11 +176,11 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
         const newVoter = await createVoter(voterPayload);
         voterId = newVoter.id;
 
-        // Asignar candidato y líder
-        if (form.candidateId && form.leaderId) {
-          await assignCandidateToVoter(
+        // Asignar candidatos y líder
+        if (form.candidateIds.length > 0 && form.leaderId) {
+          await assignCandidatesToVoter(
             voterId,
-            Number(form.candidateId),
+            form.candidateIds.map(Number),
             Number(form.leaderId),
           );
         }
@@ -306,20 +325,33 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
                 ))}
               </Select>
 
-              <Select
-                label="Candidato"
-                name="candidateId"
-                value={form.candidateId}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Seleccione</option>
-                {candidates.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — {c.party}
-                  </option>
-                ))}
-              </Select>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Candidatos
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="mt-2 space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-300">
+                  {candidates.length > 0 ? (
+                    candidates.map((c) => (
+                      <label key={c.id} className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={form.candidateIds.includes(c.id)}
+                          onChange={() => handleCandidateChange(c.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {c.name} — {c.party}
+                        </span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Selecciona un líder para ver los candidatos disponibles
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -340,20 +372,33 @@ export default function AddVoterModal({ onClose, onVoterAdded, voter }) {
                 ))}
               </Select>
 
-              <Select
-                label="Candidato"
-                name="candidateId"
-                value={form.candidateId}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Seleccione</option>
-                {candidates.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} — {c.party}
-                  </option>
-                ))}
-              </Select>
+              <div>
+                <label className="text-sm font-medium text-gray-700">
+                  Candidatos
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <div className="mt-2 space-y-2 bg-gray-50 p-4 rounded-lg border border-gray-300">
+                  {candidates.length > 0 ? (
+                    candidates.map((c) => (
+                      <label key={c.id} className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={form.candidateIds.includes(c.id)}
+                          onChange={() => handleCandidateChange(c.id)}
+                          className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400"
+                        />
+                        <span className="text-sm text-gray-700">
+                          {c.name} — {c.party}
+                        </span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-gray-500">
+                      Selecciona un líder para ver los candidatos disponibles
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 

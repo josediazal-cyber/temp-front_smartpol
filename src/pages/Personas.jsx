@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getVoters, deleteVoter, getAssignedCandidate } from "../api/voters";
+import { getVoters, deleteVoter, getAssignedCandidates } from "../api/voters";
 import AddVoterModal from "../components/AddVoterModal";
 import {
   PlusIcon,
@@ -27,12 +27,14 @@ export default function Personas() {
       const candidatesMap = {};
       for (const voter of data) {
         try {
-          const assignedData = await getAssignedCandidate(voter.id);
-          if (assignedData?.candidate) {
-            candidatesMap[voter.id] = assignedData.candidate.name;
+          const assignedData = await getAssignedCandidates(voter.id);
+          if (Array.isArray(assignedData) && assignedData.length > 0) {
+            candidatesMap[voter.id] = assignedData
+              .map((d) => d.candidate?.name || d.candidateName)
+              .filter(Boolean);
           }
         } catch {
-          // Ignorar si no hay candidato asignado
+          // Ignorar si no hay candidatos asignados
         }
       }
       setVoterCandidates(candidatesMap);
@@ -163,28 +165,36 @@ export default function Personas() {
                     </td>
 
                     <td className="px-6 py-4 text-sm font-medium text-gray-800">
-                      {v.identification}
+                      {v.identification || "No registrado"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {v.email || "-"}
+                      {v.email || "No registrado"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                      {v.phone || "-"}
+                      {v.phone || "No registrado"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">
-                      {v.votingLocation}
+                      {v.votingLocation || "No registrado"}
                     </td>
 
                     <td className="px-6 py-4 text-sm text-gray-700">
-                      {voterCandidates[v.id] ? (
-                        <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
-                          {voterCandidates[v.id]}
-                        </span>
+                      {voterCandidates[v.id] &&
+                      voterCandidates[v.id].length > 0 ? (
+                        <div className="flex flex-col gap-2">
+                          {voterCandidates[v.id].map((candidateName, idx) => (
+                            <span
+                              key={idx}
+                              className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap w-fit"
+                            >
+                              {candidateName}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
-                        <span className="text-gray-400">Sin asignar</span>
+                        <span className="text-gray-400">No asignado</span>
                       )}
                     </td>
 
@@ -224,25 +234,32 @@ export default function Personas() {
 
               <div className="text-sm text-gray-700 mt-3 space-y-1">
                 <p>
-                  <b>ID:</b> {v.identification}
+                  <b>ID:</b> {v.identification || "No registrado"}
                 </p>
                 <p>
-                  <b>Email:</b> {v.email || "-"}
+                  <b>Email:</b> {v.email || "No registrado"}
                 </p>
                 <p>
-                  <b>Tel:</b> {v.phone || "-"}
+                  <b>Tel:</b> {v.phone || "No registrado"}
                 </p>
                 <p>
-                  <b>Ubicación:</b> {v.votingLocation}
+                  <b>Ubicación:</b> {v.votingLocation || "No registrado"}
                 </p>
                 <p>
-                  <b>Candidato:</b>{" "}
-                  {voterCandidates[v.id] ? (
-                    <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold ml-1">
-                      {voterCandidates[v.id]}
-                    </span>
+                  <b>Candidatos:</b>{" "}
+                  {voterCandidates[v.id] && voterCandidates[v.id].length > 0 ? (
+                    <div className="flex flex-col gap-2 mt-1">
+                      {voterCandidates[v.id].map((candidateName, idx) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700 font-semibold w-fit"
+                        >
+                          {candidateName}
+                        </span>
+                      ))}
+                    </div>
                   ) : (
-                    <span className="text-gray-400">Sin asignar</span>
+                    <span className="text-gray-400">No asignado</span>
                   )}
                 </p>
               </div>
