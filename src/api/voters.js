@@ -1,7 +1,7 @@
 import { API_URL } from "./config";
 
-export async function getVoters() {
-  const response = await fetch(`${API_URL}/voters`);
+export async function getVoters(page = 1, limit = 20) {
+  const response = await fetch(`${API_URL}/voters?page=${page}&limit=${limit}`);
   if (!response.ok) throw new Error("Error al obtener votantes");
   return response.json();
 }

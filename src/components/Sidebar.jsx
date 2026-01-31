@@ -52,6 +52,21 @@ export default function Sidebar({ isOpen, onClose }) {
                 <span className="ml-3">Personas</span>
               </Link>
             </li>
+            <li>
+              <Link
+                to="/app/reportes"
+                onClick={onClose}
+                className={`flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-all
+                  ${
+                    isActive("/app/reportes")
+                      ? "bg-orange-500 text-white shadow-md"
+                      : "text-gray-600 hover:bg-orange-100 hover:text-orange-600"
+                  }`}
+              >
+                📊
+                <span className="ml-3">Informes</span>
+              </Link>
+            </li>
           </ul>
         </nav>
 

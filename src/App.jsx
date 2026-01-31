@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Inicio from "./pages/Inicio";
 import Personas from "./pages/Personas";
+import Reportes from "./pages/Reportes";
 import PrivateRoute from "./components/PrivateRoute";
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
         >
           <Route path="inicio" element={<Inicio />} />
           <Route path="personas" element={<Personas />} />
+          <Route path="reportes" element={<Reportes />} />
           {/* Ruta por defecto dentro de Dashboard */}
           <Route index element={<Navigate to="inicio" replace />} />
         </Route>

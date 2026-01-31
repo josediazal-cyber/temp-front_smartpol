@@ -5,6 +5,8 @@ import {
   PlusIcon,
   PencilSquareIcon,
   TrashIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 
 export default function Personas() {
@@ -15,17 +17,24 @@ export default function Personas() {
   const [editingVoter, setEditingVoter] = useState(null);
   const [search, setSearch] = useState("");
   const [voterCandidates, setVoterCandidates] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalVoters, setTotalVoters] = useState(0);
+  const ITEMS_PER_PAGE = 20;
 
-  const fetchVoters = async () => {
+  const fetchVoters = async (page = 1) => {
     setLoading(true);
     setError("");
     try {
-      const data = await getVoters();
-      setVoters(data);
+      const data = await getVoters(page, ITEMS_PER_PAGE);
+      setVoters(data.data);
+      setCurrentPage(data.page);
+      setTotalPages(data.pages);
+      setTotalVoters(data.total);
 
       // Cargar candidatos asignados para cada votante
       const candidatesMap = {};
-      for (const voter of data) {
+      for (const voter of data.data) {
         try {
           const assignedData = await getAssignedCandidates(voter.id);
           if (Array.isArray(assignedData) && assignedData.length > 0) {
@@ -46,8 +55,8 @@ export default function Personas() {
   };
 
   useEffect(() => {
-    fetchVoters();
-  }, []);
+    fetchVoters(currentPage);
+  }, [currentPage]);
 
   const handleEdit = (voter) => {
     setEditingVoter(voter);
@@ -57,17 +66,32 @@ export default function Personas() {
   const handleDelete = async (voterId) => {
     if (!confirm("¿Estás seguro de eliminar este votante?")) return;
     await deleteVoter(voterId);
-    setVoters(voters.filter((v) => v.id !== voterId));
+    // Recargar la página actual
+    fetchVoters(currentPage);
   };
 
-  const filteredVoters = voters.filter((v) => {
-    const fullName = `${v.firstName} ${v.lastName}`.toLowerCase();
-    const identification = v.identification?.toLowerCase() || "";
-    return (
-      fullName.includes(search.toLowerCase()) ||
-      identification.includes(search.toLowerCase())
-    );
-  });
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const filteredVoters = search
+    ? voters.filter((v) => {
+        const fullName = `${v.firstName} ${v.lastName}`.toLowerCase();
+        const identification = v.identification?.toLowerCase() || "";
+        return (
+          fullName.includes(search.toLowerCase()) ||
+          identification.includes(search.toLowerCase())
+        );
+      })
+    : voters;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 via-gray-50 to-white p-4 sm:p-6 lg:p-8">
@@ -217,6 +241,45 @@ export default function Personas() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls - Desktop */}
+          <div className="mt-6 flex items-center justify-between px-4 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl">
+            <div className="text-sm text-gray-600">
+              Mostrando{" "}
+              <span className="font-semibold">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+              </span>{" "}
+              a{" "}
+              <span className="font-semibold">
+                {Math.min(currentPage * ITEMS_PER_PAGE, totalVoters)}
+              </span>{" "}
+              de <span className="font-semibold">{totalVoters}</span> votantes
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+                Anterior
+              </button>
+              <div className="flex items-center gap-2 px-4 py-2">
+                <span className="text-sm text-gray-700">
+                  Página <span className="font-semibold">{currentPage}</span> de{" "}
+                  <span className="font-semibold">{totalPages}</span>
+                </span>
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Siguiente
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -280,6 +343,45 @@ export default function Personas() {
               </div>
             </div>
           ))}
+
+          {/* Pagination Controls - Mobile */}
+          <div className="mt-6 flex flex-col gap-4 px-4 py-4 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="text-xs text-gray-600 text-center">
+              Mostrando{" "}
+              <span className="font-semibold">
+                {(currentPage - 1) * ITEMS_PER_PAGE + 1}
+              </span>{" "}
+              a{" "}
+              <span className="font-semibold">
+                {Math.min(currentPage * ITEMS_PER_PAGE, totalVoters)}
+              </span>{" "}
+              de <span className="font-semibold">{totalVoters}</span> votantes
+            </div>
+            <div className="flex gap-2 justify-center">
+              <button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+                Anterior
+              </button>
+              <div className="flex items-center gap-2 px-3 py-2">
+                <span className="text-xs text-gray-700">
+                  <span className="font-semibold">{currentPage}</span>/
+                  <span className="font-semibold">{totalPages}</span>
+                </span>
+              </div>
+              <button
+                onClick={handleNextPage}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition text-sm"
+              >
+                Siguiente
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
